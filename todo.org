@@ -1,0 +1,6 @@
+* fix margins - it outputs parameters in quotation marks
+* find out why filterEmpty is not working for the Series object through interactive debugging
+* find out why the generated javascript is not working
+* buildAxisOptions
+* look at all examples at the NVD3 website and make sure the library can generate all of them
+* write convenience functions to build HTML around the generated javascript
