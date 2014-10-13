@@ -17,7 +17,7 @@ chart.useInteractiveGuideline(true);
 chart.margin({bottom:20,left:60,right:60,top:30});
 nv.utils.windowResize(function() { chart.update() });
 var myData = [{"color":"#ff7f0e","values":[{"x":1,"y":3},{"x":2,"y":4},{"x":3,"y":4},{"x":4,"y":6},{"x":5,"y":8}],"key":"First Series"}];
-d3.select('#chart svg').datum(myData).call(chart);
+d3.select('#chart2 svg').datum(myData).call(chart);
 return chart;
 }
 nv.addGraph(graphFunction);
@@ -46,6 +46,24 @@ function sinCos() {
 }
 
 </script>
+    <script>
+      function graphFunction () {
+var chart = nv.models.lineChart();
+chart.showLegend(true);
+chart.transitionDuration(360);
+chart.useInteractiveGuideline(true);
+chart.margin({"bottom":20,"left":60,"right":60,"top":30});
+chart.showXAxis(true);
+chart.xAxis.axisLabel("My X Axis");
+chart.showYAxis(true);
+chart.yAxis.axisLabel("My X Axis");
+nv.utils.windowResize(function() { chart.update() });
+      var myData = [{"color":"#ff7f0e","values":[{x: 1025409600000 , y: 23.041422681023] , {x: 1028088000000 , y: 19.854291255832} , [ 1030766400000 , 21.02286281168] , [ 1033358400000 , 22.093608385173] , [ 1036040400000 , 25.108079299458] , [ 1038632400000 , 26.982389242348] , [ 1041310800000 , 19.828984957662] , [ 1043989200000 , 19.914055036294] , [ 1046408400000 , 19.436150539916] , [ 1049086800000 , 21.558650338602] , [ 1051675200000 , 24.395594061773] , [ 1054353600000 , 24.747089309384] , [ 1056945600000 , 23.491755498807] , [ 1059624000000 , 23.376634878164] , [ 1062302400000 , 24.581223154533] , [ 1064894400000 , 24.922476843538] , [ 1067576400000 , 27.357712939042] , [ 1070168400000 , 26.503020572593] , [ 1072846800000 , 26.658901244878] , [ 1075525200000 , 27.065704156445] , [ 1078030800000 , 28.735320452588] , [ 1080709200000 , 31.572277846319] , [ 1083297600000 , 30.932161503638] , [ 1085976000000 , 31.627029785554] , [ 1088568000000 , 28.728743674232] , [ 1091246400000 , 26.858365172675] , [ 1093924800000 , 27.279922830032] , [ 1096516800000 , 34.408301211324] , [ 1099195200000 , 34.794362930439] , [ 1101790800000 , 35.609978198951] , [ 1104469200000 , 33.574394968037] , [ 1107147600000 , 31.979405070598] , [ 1109566800000 , 31.19009040297] , [ 1112245200000 , 31.083933968994] , [ 1114833600000 , 29.668971113185] , [ 1117512000000 , 31.490638014379] , [ 1120104000000 , 31.818617451128] , [ 1122782400000 , 32.960314008183]],"key":"First Series"}];
 
+d3.select('#chart svg').datum(myData).call(chart);
+return chart;
+}
+nv.addGraph(graphFunction);
+    </script>
 </body>
 </html>

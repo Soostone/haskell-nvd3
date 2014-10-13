@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE RecordWildCards    #-}
+{-# LANGUAGE ViewPatterns      #-}
 
 module Graphics.NVD3.Types where
 
@@ -8,20 +10,21 @@ import           Data.Aeson
 import           Data.Data
 import qualified Data.HashMap.Strict        as H
 import           Data.Monoid
+import Data.String
 import           Data.Text                  (Text)
 import qualified Data.Text.Lazy             as T
 import qualified Data.Text.Lazy.Builder     as B
 import qualified Data.Text.Lazy.Builder.Int as B
 import           Data.Typeable
 import           Data.Vector.Unboxed        (Vector)
-import qualified Data.Vector.Unboxed        as V
+import qualified Data.Vector.Unboxed        as VU
+import qualified Data.Vector as V
 import           GHC.Generics
 
 data Axis = Axis
             { displayed  :: Bool
             , axisLabel  :: Maybe Text
             , tickFormat :: Maybe Text
-            , date       :: Maybe Bool
             } deriving (Generic,Show)
 
 instance ToJSON Axis
@@ -31,23 +34,20 @@ defAxis = Axis
               { displayed = True
               , axisLabel = Just "Default Axis"
               , tickFormat = Nothing
-              , date = Nothing
               }
 
--- | Field names should correspond directly to Javascript parameters
 data ChartOptions = ChartOptions
                     { useInteractiveGuideline :: Bool
                     , transitionDuration      :: Int
+                    , cssSelector             :: Text
                     , colorCategory           :: Maybe ColorCategory
                     , colorList               :: Maybe [Text]
                     , stacked                 :: Maybe Bool
                     , resize                  :: Maybe Bool
                     , showLegend              :: Maybe Bool
-                    , showLabels              :: Maybe Bool
                     , xAxis                   :: Maybe Axis
                     , yAxis                   :: Maybe Axis
                     , margins                 :: Maybe Margins
-                    , cssSelector             :: Text
                     , d3Extra                 :: Maybe Text
                     } deriving (Generic,Show)
 
@@ -57,35 +57,55 @@ defChartOptions :: ChartOptions
 defChartOptions = ChartOptions
                         { useInteractiveGuideline = True
                         , transitionDuration = 360
+                        , cssSelector = "#chart svg"
                         , colorCategory = Nothing
                         , colorList = Nothing
                         , stacked = Nothing
                         , resize = Just True
                         , showLegend = Just True
-                        , showLabels = Nothing
                         , xAxis = Just defAxis
                         , yAxis = Just defAxis
                         , margins = Just defMargins
-                        , cssSelector = "#chart svg"
                         , d3Extra = Nothing
                         }
 
 data Series = Series
-              { values :: Vector (Float,Float)
-              , key    :: Text
+              { values :: Vector Values
+              , key    :: Text -- don't name it null
               , color  :: Maybe Text
               , area   :: Maybe Bool
               , shape  :: Maybe Text
               , size   :: Maybe Int
               , type'  :: Maybe Text
               , bar    :: Maybe Bool
-              } deriving (Generic,Show)
+              } deriving (Generic)
 
-instance ToJSON Series
+instance ToJSON Series where
+  toJSON Series {..} =
+    object [ "values" .= (toJSON values)
+           , "key"    .= (toJSON key)
+           , "color"  .= (toJSON color)
+           , "area"   .= (toJSON area)
+           , "shape"  .= (toJSON shape)
+           , "size"   .= (toJSON size)
+           , "type"   .= (toJSON type')
+           , "bar"    .= (toJSON bar)
+           ]
+
+data Values = NumVals
+              { numX :: Float
+              , numY :: Float
+              } deriving (Generic,Show) -- DateVals (Vector Date) (Vector Float)
+
+instance ToJSON Values where
+  toJSON NumVals {..}  =
+    object [ "x" .= numX
+           , "y" .= numY
+           ]
 
 defSeries :: Series
 defSeries = Series
-            { values = V.zip (V.fromList [1..10]) (V.fromList [1..10])
+            { values = V.unfoldr NumVals $ ()
             , key = "Default Series"
             , color = Nothing
             , area = Nothing
@@ -110,6 +130,28 @@ defMargins = Margins { left = 60, right = 60, top = 30, bottom = 20}
 data ColorCategory = Category10 | Category20 | Category20B | Category20C deriving (Generic,Show)
 
 instance ToJSON ColorCategory
+
+filterEmpty :: Object -> Object
+filterEmpty o = H.filter (/= Null) o
+
+-- | Filter out the Null values if Value is an Object
+toJSON' :: (ToJSON a) => a -> Value
+toJSON' (toJSON -> Object o) = Object (filterEmpty o)
+toJSON' a = toJSON a
+
+-- | Filter out the Null values if Value is an Array of Objects
+toJSON'' :: (ToJSON a) => [a] -> Value
+toJSON'' xs = Array $ V.map (Object . filterEmpty . mkObject) vec
+  where vec = mkArray xs
+
+mkObject :: Value -> Object
+mkObject (Object o) = o
+
+mkObject' :: (ToJSON a) => a -> Object
+mkObject' (toJSON' -> Object o) = o
+
+mkArray :: (ToJSON a) => a -> Array
+mkArray (toJSON -> Array a) = a
 
 -- test = ChartOptions {interactiveGuideline = True, transitionDuration = 350, xAxis = Axis {displayed = True, label = "sup", tickFormat = "bros"}, yAxis = Axis {displayed = True, label = "sup", tickFormat = "bros"}, d3Extra = []}
 

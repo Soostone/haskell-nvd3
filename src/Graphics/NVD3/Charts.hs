@@ -19,16 +19,12 @@ lineChart ss options = if null ss
                        then ""
                        else let a = buildJS "lineChart" ss options in a
 
-vals :: Vector Float
-vals = V.fromList [1..100]
+vals :: Vector Values
+vals = V.unfoldr (\n -> )
 
-vals2 = V.map (^2) vals
+lineCOpts = defChartOptions{xAxis = Just defAxis{ axisLabel = Just "My X Axis"}, yAxis = Just defAxis{ axisLabel = Just "My X Axis"}}
 
-vals3 = V.map (^3) vals
-
-lineCOpts = defChartOptions
-
-ss = [defSeries {values = V.zip vals vals, key = "First Series", color = Just "#ff7f0e"}
-     , defSeries {values = V.zip vals vals2, key = "Squared Series", color = Just "#2ca02c"}, defSeries {values = V.zip vals vals3, key = "Cubed Series", color = Just "#7777ff"}]
+ss = [defSeries {values = NumVals vals vals, key = "First Series", color = Just "#ff7f0e"}
+     , defSeries {values = NumVals vals vals2, key = "Squared Series", color = Just "#2ca02c"}, defSeries {values = NumVals vals vals3, key = "Cubed Series", color = Just "#7777ff"}]
 
 testLine = T.unpack $ B.toLazyText $ buildJS "lineChart" ss lineCOpts
