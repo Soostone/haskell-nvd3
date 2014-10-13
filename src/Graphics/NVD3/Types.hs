@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE RecordWildCards    #-}
-{-# LANGUAGE ViewPatterns      #-}
+{-# LANGUAGE ViewPatterns       #-}
 
 module Graphics.NVD3.Types where
 
@@ -10,15 +10,16 @@ import           Data.Aeson
 import           Data.Data
 import qualified Data.HashMap.Strict        as H
 import           Data.Monoid
-import Data.String
+import           Data.String
 import           Data.Text                  (Text)
 import qualified Data.Text.Lazy             as T
 import qualified Data.Text.Lazy.Builder     as B
 import qualified Data.Text.Lazy.Builder.Int as B
 import           Data.Typeable
+import qualified Data.Vector                as V
+import qualified Data.Vector.Generic        as VG
 import           Data.Vector.Unboxed        (Vector)
 import qualified Data.Vector.Unboxed        as VU
-import qualified Data.Vector as V
 import           GHC.Generics
 
 data Axis = Axis
@@ -70,7 +71,7 @@ defChartOptions = ChartOptions
                         }
 
 data Series = Series
-              { values :: Vector Values
+              { values :: V.Vector Values
               , key    :: Text -- don't name it null
               , color  :: Maybe Text
               , area   :: Maybe Bool
@@ -99,13 +100,13 @@ data Values = NumVals
 
 instance ToJSON Values where
   toJSON NumVals {..}  =
-    object [ "x" .= numX
-           , "y" .= numY
+    object [ "x" .= toJSON numX
+           , "y" .= toJSON numY
            ]
 
 defSeries :: Series
 defSeries = Series
-            { values = V.unfoldr NumVals $ ()
+            { values = V.unfoldr (\n -> if n==21 then Nothing else Just (NumVals {numX = n, numY = n}, n+1)) 1
             , key = "Default Series"
             , color = Nothing
             , area = Nothing
