@@ -44,7 +44,6 @@ data ChartOptions = ChartOptions
                     , resize                  :: Maybe Bool
                     , showLegend              :: Maybe Bool
                     , showLabels              :: Maybe Bool
-                    , dateFormat              :: Maybe Text
                     , xAxis                   :: Maybe Axis
                     , yAxis                   :: Maybe Axis
                     , margins                 :: Maybe Margins
@@ -63,8 +62,7 @@ defChartOptions = ChartOptions
                         , stacked = Nothing
                         , resize = Just True
                         , showLegend = Just True
-                        , showLabels = Just True
-                        , dateFormat = Just "%x"
+                        , showLabels = Nothing
                         , xAxis = Just defAxis
                         , yAxis = Just defAxis
                         , margins = Just defMargins

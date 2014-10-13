@@ -1,6 +1,7 @@
-* fix margins - it outputs parameters in quotation marks
+* fix Series - values field should, in json, be an array of objects with x and y fields - at least in line chart
+** may need to have different Value types for Int and Float and different Series objects for different charts
+*** write a function changeKeys that takes an object and changes the keys -- foldl1' with intersection again
 * find out why filterEmpty is not working for the Series object through interactive debugging
-* find out why the generated javascript is not working
 * buildAxisOptions
 * look at all examples at the NVD3 website and make sure the library can generate all of them
 * write convenience functions to build HTML around the generated javascript
