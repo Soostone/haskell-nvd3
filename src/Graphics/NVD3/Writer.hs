@@ -24,75 +24,90 @@ buildJS :: Text -> [Series] -> ChartOptions -> B.Builder
 buildJS chart ss options = b "function graphFunction () {\n" <>
                            b "var chart = nv.models." <>
                            b chart <> b "();\n" <>
-                           buildChartOptions optionsObj <>
+                           buildChartOptions options <>
                            (dumpMargins $ margins options) <>
-                           buildAxisOptions options <>
+                           buildAxisOptions options chart <>
                            (if (resize options == Just True)
                             then b "nv.utils.windowResize(function() { chart.update() });\n"
                             else mempty) <>
-                           b "var myData = " <> buildSeries ss
+                           b "var myData = " <> (if chart /= "pieChart" then buildSeries ss else b $ encodeText $ head ss)
                            <> b ";\n" <> maybe mempty b (d3Extra options) <> "\n" <>
                            b "d3.select('" <> b (cssSelector options)
                            <> b "').datum(myData).call(chart);\n" <>
                            b "return chart;\n" <>
                            b "}\nnv.addGraph(graphFunction);\n"
                            where 
-                                 optionsObj = mkObject' options
-                                 dumpMargins (Just m) = b "chart.margin(" <> (B.fromLazyText $
-                                                        decodeUtf8 $ encode m) <> b ");\n"
+                                 dumpMargins (Just m) = b "chart.margin(" <> (b $ encodeText m) <> b ");\n"
                                  dumpMargins Nothing = mempty
-
-tab :: Int -> B.Builder
-tab n = B.fromText $ T.replicate (4 * n) " "
 
 b :: Text -> B.Builder
 b = B.fromText
     
-buildChartOptions :: Object -> B.Builder
-buildChartOptions options = generateOpts (b "chart") $ filterIrrelevant irrelevantFields options
+buildChartOptions :: ChartOptions -> B.Builder
+buildChartOptions options = (generateOpts (b "chart") $ filterIrrelevant irrelevantFields opts)
+                            <> maybe mempty (\cc -> b "chart.color(d3.scale." <> (b $ encodeText cc) <> b "().range());\n") (colorCategory options)
+                            <> maybe mempty (\oc -> b "chart.scatter.onlyCircles" <> (b $ encodeText oc) <> b ");\n") (onlyCircles options)
   where
-        filterIrrelevant :: [Text] -> Object -> Object
-        filterIrrelevant (x:xs) o = H.delete x $ filterIrrelevant xs o
-        filterIrrelevant _ o = o
-        irrelevantFields = ["xAxis", "yAxis", "margins", "resize", "cssSelector"]
+      irrelevantFields = ["xAxis", "yAxis", "margins", "resize", "cssSelector","colorCategory"]
+      opts = mkObject' options
+
+filterIrrelevant :: [Text] -> Object -> Object
+filterIrrelevant (x:xs) o = H.delete x $ filterIrrelevant xs o
+filterIrrelevant _ o = o
 
 generateOpts :: B.Builder -> Object -> B.Builder
-generateOpts var o = L.foldl1' (<>) $ map snd $ H.toList $
+generateOpts var o = L.foldl' (<>) mempty $ map snd $ H.toList $
                  H.mapWithKey gen (encodeMap $ filterEmpty o)
   where gen k v = var <> b "." <> b k
                <> b "("  <> b v <> b ");\n"
 
 encodeMap :: Object -> H.HashMap Text Text
-encodeMap o = H.map (LT.toStrict . decodeUtf8 . encode) o
+encodeMap o = H.map encodeText o
+
+encodeText :: (ToJSON a) => a -> Text
+encodeText = (LT.toStrict . decodeUtf8 . encode)
 
 buildSeries :: [Series] -> B.Builder
 buildSeries ss = B.fromLazyText $ decodeUtf8 $ encode $ toJSON'' ss
 
-buildAxisOptions :: ChartOptions -> B.Builder
-buildAxisOptions opts = maybe mempty (buildAxis "x") (xAxis opts) <>
-                        maybe mempty (buildAxis "y") (yAxis opts)
+buildAxisOptions :: ChartOptions -> Text -> B.Builder
+buildAxisOptions options chart = buildIfExists "x" (xAxis options) <>
+                        case chart of "linePlusBarChart" -> buildIfExists "y1" (yAxis options) <>
+                                                            buildIfExists "y2" (y2Axis options)
+                                      "lineWithFocusChart" -> buildIfExists "y" (yAxis options) <>
+                                                              buildIfExists "y2" (y2Axis options)
+                                      _ -> buildIfExists "y" (yAxis options)
+
   where buildAxis :: Text -> Axis -> B.Builder
         buildAxis xy axis = b "chart.show" <> (b $ T.toUpper xy)
                             <> b "Axis(" <> (if displayed axis then b "true" else b "false")
                             <> b ");\n"
-                            <> generateOpts (b "chart." <> b xy <> b "Axis") (H.delete "displayed" $ mkObject $ toJSON $ axis)
-                            
+                            <> generateOpts (prefix xy)
+                            (filterIrrelevant irrelevantFields $ mkObject $ toJSON $ axis)
+                            <> maybe mempty
+                            (\tf -> prefix xy <> b ".tickFormat(" <> buildFormat tf <> b "'));\n")
+                            (tickFormat axis)
+        irrelevantFields = ["displayed","tickFormat"]
+        prefix xy = b "chart." <> b xy <> b "Axis"
+        buildFormat :: TickFormat -> B.Builder
+        buildFormat (TickFormat t) = b "d3.format('" <> b t <> "');\n"
+        buildFormat (DateFormat t) = b "function(d) {\nreturn d3.time.format('"
+                                     <> b t <> b "')(new Date(d))\n});\n"
+        buildIfExists :: Text -> Maybe Axis -> B.Builder
+        buildIfExists xy (Just ax) = buildAxis xy ax
+        buildIfExists xy Nothing = mempty
+
 swapKeys :: [(Text,Text)] -> H.HashMap Text v -> H.HashMap Text v
 swapKeys (t:ts) hm = swapKey t $ swapKeys ts hm
   where swapKey (old,new) o = let val = o H.! old in (H.delete old) $ H.insert new val o
 swapKeys _ hm = hm
-
--- buildChartOptions options = optionsMap' H.tra
---   where optionsMap = undefined
---         optionsMap' = undefined
-
 
 -- | Returns only the fields which have non-empty values
 changedFields :: Object -> Object -> Object
 changedFields def new = H.filterWithKey changed new
                         where changed k v = (def H.! k) == v
 
-testChartOptions :: ChartOptions -> LT.Text
-testChartOptions (toJSON' -> Object o) = B.toLazyText $ buildChartOptions o
+-- testChartOptions :: ChartOptions -> LT.Text
+-- testChartOptions (toJSON' -> Object o) = B.toLazyText $ buildChartOptions o
 
-testChartOptionsDef = testChartOptions defChartOptions
+-- testChartOptionsDef = testChartOptions defChartOptions

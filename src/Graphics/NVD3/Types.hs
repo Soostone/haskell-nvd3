@@ -12,7 +12,8 @@ import qualified Data.HashMap.Strict        as H
 import           Data.Monoid
 import           Data.String
 import           Data.Text                  (Text)
-import qualified Data.Text.Lazy             as T
+import qualified Data.Text                  as T
+import qualified Data.Text.Lazy             as TL
 import qualified Data.Text.Lazy.Builder     as B
 import qualified Data.Text.Lazy.Builder.Int as B
 import           Data.Typeable
@@ -25,7 +26,7 @@ import           GHC.Generics
 data Axis = Axis
             { displayed  :: Bool
             , axisLabel  :: Maybe Text
-            , tickFormat :: Maybe Text
+            , tickFormat :: Maybe TickFormat
             } deriving (Generic,Show)
 
 instance ToJSON Axis
@@ -37,18 +38,40 @@ defAxis = Axis
               , tickFormat = Nothing
               }
 
+-- | DateFormat assumes that the corresponding data is in milliseconds since epoch
+data TickFormat = TickFormat Text | DateFormat Text deriving (Show,Generic)
+
+instance ToJSON TickFormat
+
 data ChartOptions = ChartOptions
-                    { useInteractiveGuideline :: Bool
+                    { cssSelector             :: Text
                     , transitionDuration      :: Int
-                    , cssSelector             :: Text
+                    , clipEdge                :: Maybe Bool
                     , colorCategory           :: Maybe ColorCategory
-                    , colorList               :: Maybe [Text]
-                    , stacked                 :: Maybe Bool
+                    , colors                  :: Maybe [Text]
+                    , donut                   :: Maybe Bool
+                    , donutRatio              :: Maybe Float
+                    , groupSpacing            :: Maybe Float
+                    , labelThreshold          :: Maybe Float
+                    , labelType               :: Maybe LabelType
+                    , margins                 :: Maybe Margins
+                    , onlyCircles             :: Maybe Bool
+                    , reduceXTicks            :: Maybe Bool
                     , resize                  :: Maybe Bool
+                    , rightAlignYAxis         :: Maybe Bool
+                    , rotateLabels            :: Maybe Float
+                    , showControls            :: Maybe Bool
+                    , showDistX               :: Maybe Bool
+                    , showDistY               :: Maybe Bool
+                    , showLabels              :: Maybe Bool
                     , showLegend              :: Maybe Bool
+                    , showValues              :: Maybe Bool
+                    , staggerLabels           :: Maybe Bool
+                    , tooltips                :: Maybe Bool
+                    , useInteractiveGuideline :: Maybe Bool
                     , xAxis                   :: Maybe Axis
                     , yAxis                   :: Maybe Axis
-                    , margins                 :: Maybe Margins
+                    , y2Axis                  :: Maybe Axis
                     , d3Extra                 :: Maybe Text
                     } deriving (Generic,Show)
 
@@ -56,19 +79,43 @@ instance ToJSON ChartOptions
 
 defChartOptions :: ChartOptions
 defChartOptions = ChartOptions
-                        { useInteractiveGuideline = True
-                        , transitionDuration = 360
-                        , cssSelector = "#chart svg"
-                        , colorCategory = Nothing
-                        , colorList = Nothing
-                        , stacked = Nothing
-                        , resize = Just True
-                        , showLegend = Just True
-                        , xAxis = Just defAxis
-                        , yAxis = Just defAxis
-                        , margins = Just defMargins
-                        , d3Extra = Nothing
-                        }
+                    { cssSelector = "#chart svg"
+                    , transitionDuration = 350
+                    , useInteractiveGuideline = Nothing
+                    , clipEdge = Nothing
+                    , colors = Nothing
+                    , colorCategory = Nothing
+                    , donut = Nothing
+                    , donutRatio = Nothing
+                    , groupSpacing = Nothing
+                    , labelThreshold = Nothing
+                    , labelType = Nothing
+                    , margins = Nothing
+                    , onlyCircles = Nothing
+                    , reduceXTicks = Nothing
+                    , resize = Just True
+                    , rightAlignYAxis = Nothing
+                    , rotateLabels = Nothing
+                    , showControls = Nothing
+                    , showDistX = Nothing
+                    , showDistY = Nothing
+                    , showLabels = Nothing
+                    , showLegend = Nothing
+                    , showValues = Nothing
+                    , staggerLabels = Nothing
+                    , tooltips = Nothing
+                    , xAxis = Just defAxis
+                    , yAxis = Just defAxis
+                    , y2Axis = Nothing
+                    , d3Extra = Nothing
+                    }
+
+data LabelType = LabelKey | LabelValue | LabelPercent deriving (Show,Eq)
+
+instance ToJSON LabelType where
+  toJSON LabelKey = "key"
+  toJSON LabelValue = "value"
+  toJSON LabelPercent = "percent"
 
 data Series = Series
               { values :: V.Vector Values
@@ -76,45 +123,86 @@ data Series = Series
               , color  :: Maybe Text
               , area   :: Maybe Bool
               , shape  :: Maybe Text
-              , size   :: Maybe Int
+              , size   :: Maybe Float
               , type'  :: Maybe Text
-              , bar    :: Maybe Bool
-              } deriving (Generic)
+              , bar'   :: Maybe Bool
+              }
+            | PieSeries (V.Vector PieVals)
+            deriving (Generic)
 
 instance ToJSON Series where
   toJSON Series {..} =
-    object [ "values" .= (toJSON values)
-           , "key"    .= (toJSON key)
-           , "color"  .= (toJSON color)
-           , "area"   .= (toJSON area)
-           , "shape"  .= (toJSON shape)
-           , "size"   .= (toJSON size)
-           , "type"   .= (toJSON type')
-           , "bar"    .= (toJSON bar)
+    object [ "values" .= values
+           , "key"    .= key
+           , "color"  .= color
+           , "area"   .= area
+           , "shape"  .= shape
+           , "size"   .= size
+           , "type"   .= type'
+           , "bar"    .= bar'
            ]
-
-data Values = NumVals
-              { numX :: Float
-              , numY :: Float
-              } deriving (Generic,Show) -- DateVals (Vector Date) (Vector Float)
-
-instance ToJSON Values where
-  toJSON NumVals {..}  =
-    object [ "x" .= toJSON numX
-           , "y" .= toJSON numY
-           ]
+  toJSON (PieSeries vec) = Array $ V.map toJSON vec
 
 defSeries :: Series
 defSeries = Series
-            { values = V.unfoldr (\n -> if n==21 then Nothing else Just (NumVals {numX = n, numY = n}, n+1)) 1
+            { values = mkNumVals (V.enumFromN 1 20)
+                       (V.map (*2) $ V.enumFromN 1 20)
             , key = "Default Series"
             , color = Nothing
             , area = Nothing
             , shape = Nothing
             , size = Nothing
             , type' = Nothing
-            , bar = Nothing
+            , bar' = Nothing
             }
+
+data PieVals = PieVals
+               { pieLabel :: Text
+               , pieVal   :: Float
+               } deriving (Show,Eq)
+
+instance ToJSON PieVals where
+  toJSON PieVals {..} =
+    object [ "label" .= pieLabel
+           , "value" .= pieVal
+           ]
+
+data Values = NumVals
+              { numX :: Float
+              , numY :: Float
+              }
+            | DiscreteVals
+              { dvLabel :: Text
+              , dvY     :: Float
+              }
+            | BulletVal
+              { bTitle    :: Text
+              , bSubtitle :: Maybe Text
+              , bRanges   :: [Float]
+              , bMeasures :: [Float]
+              , bMarkers  :: [Float]
+              }
+            deriving (Show,Eq) -- DateVals (Vector Date) (Vector Float)
+
+instance ToJSON Values where
+  toJSON NumVals {..}  =
+    object [ "x" .= numX
+           , "y" .= numY
+           ]
+  toJSON DiscreteVals {..} =
+    object [ "label" .= dvLabel
+           , "value" .= dvY
+           ]
+  toJSON BulletVal {..} =
+    object [ "title" .= bTitle
+           , "subtitle" .= bSubtitle
+           , "ranges" .= bRanges
+           , "measures" .= bMeasures
+           , "markers" .= bMarkers
+           ]
+
+mkNumVals :: V.Vector Float -> V.Vector Float -> V.Vector Values
+mkNumVals v1 v2 = V.map (uncurry NumVals) (V.zip v1 v2)
 
 data Margins = Margins
                { left   :: Int
@@ -130,7 +218,8 @@ defMargins = Margins { left = 60, right = 60, top = 30, bottom = 20}
 
 data ColorCategory = Category10 | Category20 | Category20B | Category20C deriving (Generic,Show)
 
-instance ToJSON ColorCategory
+instance ToJSON ColorCategory where
+  toJSON = String . T.toLower . T.pack . show
 
 filterEmpty :: Object -> Object
 filterEmpty o = H.filter (/= Null) o
@@ -153,10 +242,3 @@ mkObject' (toJSON' -> Object o) = o
 
 mkArray :: (ToJSON a) => a -> Array
 mkArray (toJSON -> Array a) = a
-
--- test = ChartOptions {interactiveGuideline = True, transitionDuration = 350, xAxis = Axis {displayed = True, label = "sup", tickFormat = "bros"}, yAxis = Axis {displayed = True, label = "sup", tickFormat = "bros"}, d3Extra = []}
-
--- test2 = toJSON test
-
--- test3 :: Value -> Value
--- test3 (Object obj123) = obj123 H.! "transitionDuration"

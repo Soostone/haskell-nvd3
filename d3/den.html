@@ -3,31 +3,147 @@
   <head>
     <meta charset="utf-8" />
     <link href="nv.d3.css" rel="stylesheet" />
-    <script src="d3.min.js"></script>
-    <script src="nv.d3.min.js"></script>
+    <script src="d3.v3.js"></script>
+    <script src="nv.d3.js"></script>
   </head>
   <body>
     <h3>Deneme</h3>
     <div id="chart"><svg style="width:450px;height:450px;"></svg></div>
     <script>
-      function graphFunction () {
-var chart = nv.models.lineChart();
-chart.showLegend(true);
-chart.transitionDuration(360);
-chart.useInteractiveGuideline(true);
-chart.margin({"bottom":20,"left":60,"right":60,"top":30});
-chart.showXAxis(true);
-chart.xAxis.axisLabel("My X Axis");
-chart.showYAxis(true);
-chart.yAxis.axisLabel("My X Axis");
+function graphFunction () {
+var chart = nv.models.lineWithFocusChart();
+chart.transitionDuration(350);
 nv.utils.windowResize(function() { chart.update() });
-var myData = [{"color":"#ff7f0e","values":[{"x":1,"y":1},{"x":2,"y":2},{"x":3,"y":3},{"x":4,"y":4},{"x":5,"y":5},{"x":6,"y":6},{"x":7,"y":7},{"x":8,"y":8},{"x":9,"y":9},{"x":10,"y":10},{"x":11,"y":11},{"x":12,"y":12},{"x":13,"y":13},{"x":14,"y":14},{"x":15,"y":15},{"x":16,"y":16},{"x":17,"y":17},{"x":18,"y":18},{"x":19,"y":19},{"x":20,"y":20}],"key":"First Series"},{"color":"#2ca02c","values":[{"x":1,"y":2},{"x":2,"y":4},{"x":3,"y":6},{"x":4,"y":8},{"x":5,"y":10},{"x":6,"y":12},{"x":7,"y":14},{"x":8,"y":16},{"x":9,"y":18},{"x":10,"y":20},{"x":11,"y":22},{"x":12,"y":24},{"x":13,"y":26},{"x":14,"y":28},{"x":15,"y":30},{"x":16,"y":32},{"x":17,"y":34},{"x":18,"y":36},{"x":19,"y":38},{"x":20,"y":40}],"key":"Squared Series"},{"color":"#7777ff","values":[{"x":1,"y":4},{"x":2,"y":8},{"x":3,"y":12},{"x":4,"y":16},{"x":5,"y":20},{"x":6,"y":24},{"x":7,"y":28},{"x":8,"y":32},{"x":9,"y":36},{"x":10,"y":40},{"x":11,"y":44},{"x":12,"y":48},{"x":13,"y":52},{"x":14,"y":56},{"x":15,"y":60},{"x":16,"y":64},{"x":17,"y":68},{"x":18,"y":72},{"x":19,"y":76},{"x":20,"y":80}],"key":"Cubed Series"}];
+var myData = [{"values":[{"x":1,"y":2},{"x":2,"y":4},{"x":3,"y":6},{"x":4,"y":8},{"x":5,"y":10},{"x":6,"y":12},{"x":7,"y":14},{"x":8,"y":16},{"x":9,"y":18},{"x":10,"y":20},{"x":11,"y":22},{"x":12,"y":24},{"x":13,"y":26},{"x":14,"y":28},{"x":15,"y":30},{"x":16,"y":32},{"x":17,"y":34},{"x":18,"y":36},{"x":19,"y":38},{"x":20,"y":40}],"key":"Default Series"},{"values":[{"x":1,"y":3},{"x":2,"y":6},{"x":3,"y":9},{"x":4,"y":12},{"x":5,"y":15},{"x":6,"y":18},{"x":7,"y":21},{"x":8,"y":24},{"x":9,"y":27},{"x":10,"y":30},{"x":11,"y":33},{"x":12,"y":36},{"x":13,"y":39},{"x":14,"y":42},{"x":15,"y":45},{"x":16,"y":48},{"x":17,"y":51},{"x":18,"y":54},{"x":19,"y":57},{"x":20,"y":60}],"key":"Second Series"}];
 
 d3.select('#chart svg').datum(myData).call(chart);
 return chart;
 }
-      nv.addGraph(graphFunction);
+nv.addGraph(graphFunction);
 
-</script>
+    </script>
 </body>
 </html>
+
+nv.addGraph(function() {
+  var chart = nv.models.lineWithFocusChart();
+
+  chart.xAxis
+      .tickFormat(d3.format(',f'));
+
+  chart.yAxis
+      .tickFormat(d3.format(',.2f'));
+
+  chart.y2Axis
+      .tickFormat(d3.format(',.2f'));
+
+  d3.select('#chart svg')
+      .datum(data)
+      .transition().duration(500)
+      .call(chart);
+
+  nv.utils.windowResize(chart.update);
+
+  return chart;
+});
+
+var data = [
+    {
+        "key": "Stream0",
+        "values": [
+            {
+                "x": 0,
+                "y": 1.7295799731844639
+            },
+            {
+                "x": 1,
+                "y": 1.4786744584068263
+            },
+            {
+                "x": 2.3,
+                "y": 1.2933604184307024
+            },
+            {
+                "x": 3,
+                "y": 1.0545169052395873
+            },
+            {
+                "x": 4,
+                "y": 0.9355866365151941
+            },
+            {
+                "x": 5,
+                "y": 0.7635212444141124
+            },
+            {
+                "x": 6,
+                "y": 0.565136089920293
+            },
+            {
+                "x": 7,
+                "y": 0.53905008125296
+            },
+            {
+                "x": 8,
+                "y": 0.37174374881238753
+            },
+            {
+                "x": 9,
+                "y": 0.34531043658548377
+            },
+            {
+                "x": 10,
+                "y": 0.328211247181182
+            }
+        ]
+},
+    {
+        "key": "Stream1",
+        "values": [
+            {
+                "x": 0,
+                "y": 0.13249877834306772
+            },
+            {
+                "x": 1,
+                "y": 0.18966416588140741
+            },
+            {
+                "x": 2,
+                "y": 0.15503209036373955
+            },
+            {
+                "x": 3,
+                "y": 0.16519284756400573
+            },
+            {
+                "x": 4,
+                "y": 0.19680925364034846
+            },
+            {
+                "x": 5,
+                "y": 0.15990817677876387
+            },
+            {
+                "x": 6,
+                "y": 0.19427819689638404
+            },
+            {
+                "x": 7,
+                "y": 0.14638497347498736
+            },
+            {
+                "x": 8,
+                "y": 0.252980017823181
+            },
+            {
+                "x": 9,
+                "y": 0.38707426684750496
+            },
+            {
+                "x": 10,
+                "y": 0.5779972814312548
+            }
+        ]
+    }
+]
