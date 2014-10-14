@@ -24,7 +24,7 @@ import qualified Data.Vector.Unboxed        as VU
 import           GHC.Generics
 
 data Axis = Axis
-            { displayed  :: Bool
+            { displayed  :: Maybe Bool -- set Nothing for multi-bar horizontal
             , axisLabel  :: Maybe Text
             , tickFormat :: Maybe TickFormat
             } deriving (Generic,Show)
@@ -33,7 +33,7 @@ instance ToJSON Axis
 
 defAxis :: Axis
 defAxis = Axis
-              { displayed = True
+              { displayed = Just True
               , axisLabel = Just "Default Axis"
               , tickFormat = Nothing
               }
@@ -127,8 +127,9 @@ data Series = Series
               , type'  :: Maybe Text
               , bar'   :: Maybe Bool
               }
-            | PieSeries (V.Vector PieVals)
-            deriving (Generic)
+            | PieSeries (V.Vector PieVal)
+            | BulletSeries BulletVal
+            deriving (Show,Eq)
 
 instance ToJSON Series where
   toJSON Series {..} =
@@ -142,6 +143,7 @@ instance ToJSON Series where
            , "bar"    .= bar'
            ]
   toJSON (PieSeries vec) = Array $ V.map toJSON vec
+  toJSON (BulletSeries bval) = toJSON bval
 
 defSeries :: Series
 defSeries = Series
@@ -156,43 +158,45 @@ defSeries = Series
             , bar' = Nothing
             }
 
-data PieVals = PieVals
+data PieVal = PieVal
                { pieLabel :: Text
                , pieVal   :: Float
                } deriving (Show,Eq)
 
-instance ToJSON PieVals where
-  toJSON PieVals {..} =
+instance ToJSON PieVal where
+  toJSON PieVal {..} =
     object [ "label" .= pieLabel
            , "value" .= pieVal
            ]
 
-data Values = NumVals
+data Values = NumVal
               { numX :: Float
               , numY :: Float
               }
-            | DiscreteVals
+            | DiscreteVal
               { dvLabel :: Text
               , dvY     :: Float
-              }
-            | BulletVal
+              } deriving (Show,Eq)
+
+instance ToJSON Values where
+  toJSON NumVal {..}  =
+    object [ "x" .= numX
+           , "y" .= numY
+           ]
+  toJSON DiscreteVal {..} =
+    object [ "x" .= dvLabel
+           , "y" .= dvY
+           ]
+
+data BulletVal = BulletVal
               { bTitle    :: Text
               , bSubtitle :: Maybe Text
               , bRanges   :: [Float]
               , bMeasures :: [Float]
               , bMarkers  :: [Float]
-              }
-            deriving (Show,Eq) -- DateVals (Vector Date) (Vector Float)
+              } deriving (Show,Eq)
 
-instance ToJSON Values where
-  toJSON NumVals {..}  =
-    object [ "x" .= numX
-           , "y" .= numY
-           ]
-  toJSON DiscreteVals {..} =
-    object [ "label" .= dvLabel
-           , "value" .= dvY
-           ]
+instance ToJSON BulletVal where
   toJSON BulletVal {..} =
     object [ "title" .= bTitle
            , "subtitle" .= bSubtitle
@@ -202,7 +206,10 @@ instance ToJSON Values where
            ]
 
 mkNumVals :: V.Vector Float -> V.Vector Float -> V.Vector Values
-mkNumVals v1 v2 = V.map (uncurry NumVals) (V.zip v1 v2)
+mkNumVals v1 v2 = V.map (uncurry NumVal) (V.zip v1 v2)
+
+mkDiscVals :: V.Vector Text -> V.Vector Float -> V.Vector Values
+mkDiscVals v1 v2 = V.map (uncurry DiscreteVal) (V.zip v1 v2)
 
 data Margins = Margins
                { left   :: Int

@@ -28,9 +28,13 @@ buildJS chart ss options = b "function graphFunction () {\n" <>
                            (dumpMargins $ margins options) <>
                            buildAxisOptions options chart <>
                            (if (resize options == Just True)
-                            then b "nv.utils.windowResize(function() { chart.update() });\n"
+                            then b "nv.utils.windowResize(chart.update);\n"
                             else mempty) <>
-                           b "var myData = " <> (if chart /= "pieChart" then buildSeries ss else b $ encodeText $ head ss)
+                           b "var myData = " <>
+                           (case chart of
+                               "pieChart" -> b $ encodeText $ head ss
+                               "bulletChart" -> L.foldl1' (<>) $ map (\bval -> b (encodeText' bval)) ss
+                               _ -> buildSeries ss)
                            <> b ";\n" <> maybe mempty b (d3Extra options) <> "\n" <>
                            b "d3.select('" <> b (cssSelector options)
                            <> b "').datum(myData).call(chart);\n" <>
@@ -66,6 +70,9 @@ encodeMap o = H.map encodeText o
 
 encodeText :: (ToJSON a) => a -> Text
 encodeText = (LT.toStrict . decodeUtf8 . encode)
+
+encodeText' :: (ToJSON a) => a -> Text
+encodeText' = (LT.toStrict . decodeUtf8 . encode . toJSON')
 
 buildSeries :: [Series] -> B.Builder
 buildSeries ss = B.fromLazyText $ decodeUtf8 $ encode $ toJSON'' ss

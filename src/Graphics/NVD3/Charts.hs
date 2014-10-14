@@ -42,7 +42,7 @@ multiBar ss options = if null ss
 multiBarH :: [Series] -> ChartOptions -> Text
 multiBarH ss options = if null ss
                        then ""
-                       else B.toLazyText $ buildJS "multiBarChartHorizontalChart" ss options
+                       else B.toLazyText $ buildJS "multiBarHorizontalChart" ss options
 
 lineBar :: [Series] -> ChartOptions -> Text
 lineBar ss options = if null ss
@@ -64,10 +64,10 @@ pie ss options = if null ss
                  then ""
                  else B.toLazyText $ buildJS "pieChart" ss options
 
--- bullet :: [Series] -> ChartOptions -> Text
--- bullet ss options = if null ss
---                     then ""
---                     else B.toLazyText $ buildJS "bulletChart" ss options
+bullet :: [Series] -> ChartOptions -> Text
+bullet ss options = if null ss
+                    then ""
+                    else B.toLazyText $ buildJS "bulletChart" ss options
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -78,17 +78,14 @@ pie ss options = if null ss
 s1 = defSeries
 s2 = defSeries {values = mkNumVals (V.enumFromN 1 20) (V.map (*3) $ V.enumFromN 1 20), key = "Second Series"}
 
--- d1 = defSeries {values = V.fromList["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]}
--- d2 = defSeries {values = , key = "Second Series"}
-
-d1 = undefined
-d2 = undefined
+d1 = defSeries {values = mkDiscVals (V.fromList ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]) (V.fromList [3,7,2,4,8])}
+d2 = defSeries {values = mkDiscVals (V.fromList ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]) (V.fromList [8,3,6,3,4]), key = "Second Series"}
 
 testLine = line [s1, s2] defChartOptions {useInteractiveGuideline = Just True, cssSelector = "#lineChart svg"}
 
 -- scatter plot
 
-testScatter = scatter [s1 {size = Just 0.45}, s2 {size = Just 0.9}] defChartOptions {useInteractiveGuideline = Just True, cssSelector = "#scatterChart svg"}
+testScatter = scatter [s1 {size = Just 0.45}, s2 {size = Just 0.9}] defChartOptions {showDistX = Just True, showDistY = Just True, cssSelector = "#scatterChart svg"}
 
 -- stacked area
 
@@ -96,15 +93,15 @@ testStackedArea = stackedArea [s1, s2] defChartOptions {useInteractiveGuideline 
 
 -- bar chart
 
-testBar = bar [d1] defChartOptions {useInteractiveGuideline = Just True, showValues = Just True, cssSelector = "#barChart svg"}
+testBar = bar [d1] defChartOptions {showValues = Just True, cssSelector = "#barChart svg"}
 
 -- multi-bar chart
 
-testMultiBar = multiBar [d1, d2] defChartOptions {useInteractiveGuideline = Just True, reduceXTicks = Just True, cssSelector = "#multiBarChart svg", groupSpacing = Just 0.1}
+testMultiBar = multiBar [d1, d2] defChartOptions {reduceXTicks = Just True, cssSelector = "#multiBarChart svg", groupSpacing = Just 0.1}
 
 -- horizontal multi-bar chart
 
-testMultiBarH = multiBarH [d1, d2] defChartOptions {useInteractiveGuideline = Just True, cssSelector = "#multiBarHChart svg", showValues = Just True, margins = Just defMargins}
+testMultiBarH = multiBarH [d1, d2] defChartOptions {cssSelector = "#multiBarHChart svg", showValues = Just True, margins = Just defMargins}
 
 -- line plus bar chart
 
@@ -126,4 +123,4 @@ testDonutChart = pie [s1,s2] defChartOptions {cssSelector = "#donutChart svg", s
 
 -- bullet chart
 
--- testBullet
+testBullet = bullet [BulletSeries (BulletVal "Revenues" (Just "in thousand $") [150,225,300] [220] [250])] defChartOptions {cssSelector = "#bulletChart svg"}
