@@ -11,8 +11,8 @@ import           Data.Data
 import qualified Data.HashMap.Strict        as H
 import           Data.Monoid
 import           Data.String
-import           Data.Text                  (Text)
 import qualified Data.Text                  as T
+import           Data.Text.Lazy             (Text)
 import qualified Data.Text.Lazy             as TL
 import qualified Data.Text.Lazy.Builder     as B
 import qualified Data.Text.Lazy.Builder.Int as B
@@ -24,7 +24,7 @@ import qualified Data.Vector.Unboxed        as VU
 import           GHC.Generics
 
 data Axis = Axis
-            { displayed  :: Maybe Bool -- set Nothing for multi-bar horizontal
+            { showAxis   :: Maybe Bool -- set Nothing for multi-bar horizontal
             , axisLabel  :: Maybe Text
             , tickFormat :: Maybe TickFormat
             } deriving (Generic,Show)
@@ -33,7 +33,7 @@ instance ToJSON Axis
 
 defAxis :: Axis
 defAxis = Axis
-              { displayed = Just True
+              { showAxis = Nothing
               , axisLabel = Just "Default Axis"
               , tickFormat = Nothing
               }
@@ -45,7 +45,6 @@ instance ToJSON TickFormat
 
 data ChartOptions = ChartOptions
                     { cssSelector             :: Text
-                    , transitionDuration      :: Int
                     , clipEdge                :: Maybe Bool
                     , colorCategory           :: Maybe ColorCategory
                     , colors                  :: Maybe [Text]
@@ -68,6 +67,7 @@ data ChartOptions = ChartOptions
                     , showValues              :: Maybe Bool
                     , staggerLabels           :: Maybe Bool
                     , tooltips                :: Maybe Bool
+                    , transitionDuration      :: Maybe Int
                     , useInteractiveGuideline :: Maybe Bool
                     , xAxis                   :: Maybe Axis
                     , yAxis                   :: Maybe Axis
@@ -80,8 +80,6 @@ instance ToJSON ChartOptions
 defChartOptions :: ChartOptions
 defChartOptions = ChartOptions
                     { cssSelector = "#chart svg"
-                    , transitionDuration = 350
-                    , useInteractiveGuideline = Nothing
                     , clipEdge = Nothing
                     , colors = Nothing
                     , colorCategory = Nothing
@@ -104,6 +102,8 @@ defChartOptions = ChartOptions
                     , showValues = Nothing
                     , staggerLabels = Nothing
                     , tooltips = Nothing
+                    , transitionDuration = Just 350
+                    , useInteractiveGuideline = Nothing
                     , xAxis = Just defAxis
                     , yAxis = Just defAxis
                     , y2Axis = Nothing
@@ -165,8 +165,8 @@ data PieVal = PieVal
 
 instance ToJSON PieVal where
   toJSON PieVal {..} =
-    object [ "label" .= pieLabel
-           , "value" .= pieVal
+    object [ "x" .= pieLabel
+           , "y" .= pieVal
            ]
 
 data Values = NumVal
@@ -210,6 +210,9 @@ mkNumVals v1 v2 = V.map (uncurry NumVal) (V.zip v1 v2)
 
 mkDiscVals :: V.Vector Text -> V.Vector Float -> V.Vector Values
 mkDiscVals v1 v2 = V.map (uncurry DiscreteVal) (V.zip v1 v2)
+
+discToPie :: V.Vector Values -> V.Vector PieVal
+discToPie vec = V.map (\val -> PieVal (dvLabel val) (dvY val)) vec
 
 data Margins = Margins
                { left   :: Int

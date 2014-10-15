@@ -3,16 +3,14 @@
 module Graphics.NVD3.Charts where
 
 import           Data.Aeson
-import           Data.Text.Lazy                  (Text)
-import qualified Data.Text.Lazy                  as T
-import qualified Data.Text.Lazy.Builder     as B
-import qualified Data.Text.Lazy.Builder.Int as B
-import           Data.Vector                (Vector)
-import qualified Data.Vector                as V
+import           Data.Text.Lazy         (Text)
+import qualified Data.Text.Lazy         as T
+import qualified Data.Text.Lazy.Builder as B
+import           Data.Vector            (Vector)
+import qualified Data.Vector            as V
 
 import           Graphics.NVD3.Types
 import           Graphics.NVD3.Writer
-
 
 line :: [Series] -> ChartOptions -> Text
 line ss options = if null ss
@@ -53,7 +51,7 @@ cumLine :: [Series] -> ChartOptions -> Text
 cumLine ss options = if null ss
                      then ""
                      else B.toLazyText $ buildJS "cumulativeLineChart" ss options
-                            
+
 lineFocus :: [Series] -> ChartOptions -> Text
 lineFocus ss options = if null ss
                        then ""
@@ -73,13 +71,15 @@ bullet ss options = if null ss
 --------------------------------------------------------------------------------
 --- tests
 
--- line chart
-
 s1 = defSeries
 s2 = defSeries {values = mkNumVals (V.enumFromN 1 20) (V.map (*3) $ V.enumFromN 1 20), key = "Second Series"}
 
 d1 = defSeries {values = mkDiscVals (V.fromList ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]) (V.fromList [3,7,2,4,8])}
 d2 = defSeries {values = mkDiscVals (V.fromList ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]) (V.fromList [8,3,6,3,4]), key = "Second Series"}
+
+p1 = PieSeries (discToPie $ values d1)
+
+-- line chart
 
 testLine = line [s1, s2] defChartOptions {useInteractiveGuideline = Just True, cssSelector = "#lineChart svg"}
 
@@ -89,7 +89,7 @@ testScatter = scatter [s1 {size = Just 0.45}, s2 {size = Just 0.9}] defChartOpti
 
 -- stacked area
 
-testStackedArea = stackedArea [s1, s2] defChartOptions {useInteractiveGuideline = Just True, cssSelector = "#stackedAreaChart svg"}
+testStackedArea = stackedArea [s1, s2] defChartOptions {useInteractiveGuideline = Just True, cssSelector = "#stackedAreaChart svg", colorCategory = Just Category10}
 
 -- bar chart
 
@@ -97,15 +97,15 @@ testBar = bar [d1] defChartOptions {showValues = Just True, cssSelector = "#barC
 
 -- multi-bar chart
 
-testMultiBar = multiBar [d1, d2] defChartOptions {reduceXTicks = Just True, cssSelector = "#multiBarChart svg", groupSpacing = Just 0.1}
+testMultiBar = multiBar [d1, d2] defChartOptions {reduceXTicks = Just True, cssSelector = "#multiBarChart svg", groupSpacing = Just 0.1, colorCategory = Just Category10}
 
 -- horizontal multi-bar chart
 
-testMultiBarH = multiBarH [d1, d2] defChartOptions {cssSelector = "#multiBarHChart svg", showValues = Just True, margins = Just defMargins}
+testMultiBarH = multiBarH [d1, d2] defChartOptions {cssSelector = "#multiBarHChart svg", showValues = Just True, margins = Just defMargins, colorCategory = Just Category10}
 
 -- line plus bar chart
 
-testLineBar = lineBar [d1,s2] defChartOptions {useInteractiveGuideline = Just True, cssSelector = "#lineBarChart svg", margins = Just defMargins}
+testLineBar = lineBar [s1{bar' = Just True},s2] defChartOptions {cssSelector = "#lineBarChart svg", margins = Just defMargins, transitionDuration = Nothing}
 
 -- cumulative line chart
 
@@ -113,14 +113,16 @@ testCumLine = cumLine [s1,s2] defChartOptions {useInteractiveGuideline = Just Tr
 
 -- line chart with focus
 
-testLineFocus = lineFocus [s1,s2] defChartOptions {cssSelector = "#lineFocusChart svg"}
+testLineFocus = lineFocus [s1,s2] defChartOptions {cssSelector = "#lineFocusChart svg", xAxis = Just defAxis {axisLabel = Nothing}, colorCategory = Just Category10}
 
 -- pie chart
 
-testPieChart = pie [s1,s2] defChartOptions {cssSelector = "#pieChart svg", showLabels = Just True, labelType = Just LabelPercent}
+testPieChart = pie [p1] defChartOptions {cssSelector = "#pieChart svg", showLabels = Just True, labelType = Just LabelPercent, xAxis = Nothing, yAxis = Nothing, transitionDuration = Nothing}
 
-testDonutChart = pie [s1,s2] defChartOptions {cssSelector = "#donutChart svg", showLabels = Just True, donut = Just True, donutRatio = Just 0.35}
+testDonutChart = pie [p1] defChartOptions {cssSelector = "#donutChart svg", showLabels = Just True, labelType = Just LabelPercent, xAxis = Nothing, yAxis = Nothing, transitionDuration = Nothing, donut = Just True, donutRatio = Just 0.35}
 
 -- bullet chart
 
-testBullet = bullet [BulletSeries (BulletVal "Revenues" (Just "in thousand $") [150,225,300] [220] [250])] defChartOptions {cssSelector = "#bulletChart svg"}
+testBullet = bullet [BulletSeries (BulletVal "Revenues" Nothing [150,225,300] [220] [250])] defChartOptions {cssSelector = "#bulletChart svg", xAxis = Nothing, yAxis = Nothing, transitionDuration = Nothing}
+
+
