@@ -1,4 +1,0 @@
-* decided to have one Series structure and use only Float for Num types - can have a second constructor that takes x as Date and y as Float
-* buildAxisOptions
-* look at all examples at the NVD3 website and make sure the library can generate all of them
-* write convenience functions to build HTML around the generated javascript
