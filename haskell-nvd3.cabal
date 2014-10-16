@@ -3,7 +3,7 @@
 
 name:                haskell-nvd3
 version:             0.1.0.0
--- synopsis:            
+synopsis:            Haskell bindings for NVD3.js
 -- description:         
 license:             BSD3
 license-file:        LICENSE
@@ -16,9 +16,9 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Graphics.NVD3.Types, Graphics.NVD3.Charts, Graphics.NVD3.Writer
-  -- other-modules:       
-  other-extensions:    DeriveDataTypeable, OverloadedStrings
-  build-depends:       base >=4.6 && <4.7, aeson >=0.7 && <0.8, text >=1.1 && <1.2, vector >=0.10 && <0.11, bytestring >=0.10 && <0.11, unordered-containers >=0.2 && <0.3
+  exposed-modules:     Graphics.NVD3
+  other-modules:       Graphics.NVD3.Types, Graphics.NVD3.Charts, Graphics.NVD3.Writer
+  other-extensions:    DeriveGeneric, OverloadedStrings, RecordWildCards, ViewPatterns
+  build-depends:       base >=4.6 && <4.7, aeson >=0.7 && <0.8, text >=1.1 && <1.2, vector >=0.10 && <0.11, unordered-containers >=0.2 && <0.3
   hs-source-dirs:      src
   default-language:    Haskell2010
