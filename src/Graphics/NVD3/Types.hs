@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE RecordWildCards    #-}
@@ -7,24 +6,14 @@
 module Graphics.NVD3.Types where
 
 import           Data.Aeson
-import           Data.Data
 import qualified Data.HashMap.Strict        as H
-import           Data.Monoid
-import           Data.String
 import qualified Data.Text                  as T
 import           Data.Text.Lazy             (Text)
-import qualified Data.Text.Lazy             as TL
-import qualified Data.Text.Lazy.Builder     as B
-import qualified Data.Text.Lazy.Builder.Int as B
-import           Data.Typeable
 import qualified Data.Vector                as V
-import qualified Data.Vector.Generic        as VG
-import           Data.Vector.Unboxed        (Vector)
-import qualified Data.Vector.Unboxed        as VU
 import           GHC.Generics
 
 data Axis = Axis
-            { showAxis   :: Maybe Bool -- set Nothing for multi-bar horizontal
+            { showAxis   :: Maybe Bool
             , axisLabel  :: Maybe Text
             , tickFormat :: Maybe TickFormat
             } deriving (Generic,Show)
@@ -118,7 +107,7 @@ instance ToJSON LabelType where
   toJSON LabelPercent = "percent"
 
 data Series = Series
-              { values :: V.Vector Values
+              { values :: V.Vector Point
               , key    :: Text -- don't name it null
               , color  :: Maybe Text
               , area   :: Maybe Bool
@@ -169,21 +158,21 @@ instance ToJSON PieVal where
            , "y" .= pieVal
            ]
 
-data Values = NumVal
-              { numX :: Float
-              , numY :: Float
-              }
-            | DiscreteVal
-              { dvLabel :: Text
-              , dvY     :: Float
-              } deriving (Show,Eq)
+data Point = PNum
+             { numX :: Float
+             , numY :: Float
+             }
+           | PDisc
+             { dvLabel :: Text
+             , dvY     :: Float
+             } deriving (Show,Eq)
 
-instance ToJSON Values where
-  toJSON NumVal {..}  =
+instance ToJSON Point where
+  toJSON PNum {..}  =
     object [ "x" .= numX
            , "y" .= numY
            ]
-  toJSON DiscreteVal {..} =
+  toJSON PDisc {..} =
     object [ "x" .= dvLabel
            , "y" .= dvY
            ]
@@ -205,14 +194,14 @@ instance ToJSON BulletVal where
            , "markers" .= bMarkers
            ]
 
-mkNumVals :: V.Vector Float -> V.Vector Float -> V.Vector Values
-mkNumVals v1 v2 = V.map (uncurry NumVal) (V.zip v1 v2)
+mkNumVals :: V.Vector Float -> V.Vector Float -> V.Vector Point
+mkNumVals v1 v2 = V.map (uncurry PNum) (V.zip v1 v2)
 
-mkDiscVals :: V.Vector Text -> V.Vector Float -> V.Vector Values
-mkDiscVals v1 v2 = V.map (uncurry DiscreteVal) (V.zip v1 v2)
+mkDiscVals :: V.Vector Text -> V.Vector Float -> V.Vector Point
+mkDiscVals v1 v2 = V.map (uncurry PDisc) (V.zip v1 v2)
 
-discToPie :: V.Vector Values -> V.Vector PieVal
-discToPie vec = V.map (\val -> PieVal (dvLabel val) (dvY val)) vec
+discToPie :: V.Vector Point -> V.Vector PieVal
+discToPie = V.map (\val -> PieVal (dvLabel val) (dvY val))
 
 data Margins = Margins
                { left   :: Int
@@ -232,7 +221,7 @@ instance ToJSON ColorCategory where
   toJSON = String . T.toLower . T.pack . show
 
 filterEmpty :: Object -> Object
-filterEmpty o = H.filter (/= Null) o
+filterEmpty = H.filter (/= Null)
 
 -- | Filter out the Null values if Value is an Object
 toJSON' :: (ToJSON a) => a -> Value
